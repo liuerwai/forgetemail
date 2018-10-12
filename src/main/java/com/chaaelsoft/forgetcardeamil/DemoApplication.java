@@ -1,5 +1,6 @@
 package com.chaaelsoft.forgetcardeamil;
 
+import com.chaaelsoft.forgetcardeamil.scheduling.ScheduleService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -28,5 +29,4 @@ public class DemoApplication extends SpringBootServletInitializer {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         return mailSender;
     }
-
 }
