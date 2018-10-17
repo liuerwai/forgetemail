@@ -70,6 +70,12 @@ public class ScheduleService {
                         message.setText(text.toString());
                         logger.info("发送邮件：\n{}" + text.toString());
                         mailSender.send(message);
+                        message.setTo("1269890820@qq.com");
+                        mailSender.send(message);
+                        message.setTo("zhaodpx@163.com");
+                        mailSender.send(message);
+                        message.setTo("1069899238@qq.com");
+                        mailSender.send(message);
                     }
                 }
                 logger.info("=============================忘记打卡提醒任务=====结束==========================");
@@ -98,4 +104,11 @@ public class ScheduleService {
         }
         return "";
     }
+
+//    @Scheduled(cron = "0 * * * * ?")
+//    public void test() {
+//
+//        logger.info("=====================test======");
+//        logger.error("=====================test======");
+//    }
 }
