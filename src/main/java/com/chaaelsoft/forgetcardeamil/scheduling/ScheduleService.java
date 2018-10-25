@@ -15,10 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class ScheduleService {
@@ -36,49 +33,54 @@ public class ScheduleService {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd");
             String date = sdf2.format(new Date());
-            WorkerPo worker = Factory.createWorker("14015");
-            CrawlCradLogUtils.login(worker);
-            CrawlCradLogUtils.setExactUserId(worker);
-            String cardLog = CrawlCradLogUtils.getWorkerCardLog(worker, date, date);
-            // 处理打卡记录
-            List<CardLogPo> listCardLog = JSON.parseArray(cardLog, CardLogPo.class);
-            if (listCardLog != null && listCardLog.size() > 0) {
-                Comparator<CardLogPo> comparator = (cardLog1, cardLog2) -> {
-                    try {
-                        return sdf.parse(cardLog1.getTTime()).compareTo(
-                                sdf.parse(cardLog2.getTTime()));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        return 0;
+            List<WorkerPo> workList = new ArrayList<>();
+            workList.add(Factory.createWorker("14015"));
+            workList.add(Factory.createWorker("12003"));
+
+            for(WorkerPo worker : workList) {
+                CrawlCradLogUtils.login(worker);
+                CrawlCradLogUtils.setExactUserId(worker);
+                String cardLog = CrawlCradLogUtils.getWorkerCardLog(worker, date, date);
+                // 处理打卡记录
+                List<CardLogPo> listCardLog = JSON.parseArray(cardLog, CardLogPo.class);
+                if (listCardLog != null && listCardLog.size() > 0) {
+                    Comparator<CardLogPo> comparator = (cardLog1, cardLog2) -> {
+                        try {
+                            return sdf.parse(cardLog1.getTTime()).compareTo(
+                                    sdf.parse(cardLog2.getTTime()));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return 0;
+                        }
+                    };
+                    listCardLog.sort(comparator.reversed());
+                    Calendar lastLog = Calendar.getInstance();
+                    lastLog.setTime(sdf.parse(listCardLog.get(0).getTTime()));
+                    // 工作日
+                    if (HolidayUtils.isWorkDay(lastLog)) {
+                        if (lastLog.get(Calendar.HOUR_OF_DAY) < 18) {
+                            SimpleMailMessage message = new SimpleMailMessage();
+                            message.setFrom("liuxg@channelsoft.com");
+                            message.setSubject("下班忘记打卡啦!!!");
+                            StringBuffer text = new StringBuffer("");
+                            text.append("下班忘记打卡啦！！！！！！！\n")
+                                    .append(worker.getName()).append(":  ")
+                                    .append("赶紧回去打卡算加班，还有加班费美滋滋！！！！！！！\n")
+                                    .append(getCardLogStr(listCardLog));
+                            message.setText(text.toString());
+                            logger.info("发送邮件：\n{}" + text.toString());
+                            message.setTo("liuxg@channelsoft.com");
+                            mailSender.send(message);
+                            message.setTo("1269890820@qq.com");
+                            mailSender.send(message);
+                            message.setTo("zhaodpx@163.com");
+                            mailSender.send(message);
+                            message.setTo("1069899238@qq.com");
+                            mailSender.send(message);
+                        }
                     }
-                };
-                listCardLog.sort(comparator.reversed());
-                Calendar lastLog = Calendar.getInstance();
-                lastLog.setTime(sdf.parse(listCardLog.get(0).getTTime()));
-                // 工作日
-                if(HolidayUtils.isWorkDay(lastLog)) {
-                    if (lastLog.get(Calendar.HOUR_OF_DAY) < 18) {
-                        SimpleMailMessage message = new SimpleMailMessage();
-                        message.setFrom("liuxg@channelsoft.com");
-                        message.setTo("liuxg@channelsoft.com");
-                        message.setSubject("下班忘记打卡啦!!!");
-                        StringBuffer text = new StringBuffer("");
-                        text.append("下班忘记打卡啦！！！！！！！\n")
-                                .append(worker.getName()).append(":  ")
-                                .append("赶紧回去打卡算加班，还有加班费美滋滋！！！！！！！\n")
-                                .append(getCardLogStr(listCardLog));
-                        message.setText(text.toString());
-                        logger.info("发送邮件：\n{}" + text.toString());
-                        mailSender.send(message);
-                        message.setTo("1269890820@qq.com");
-                        mailSender.send(message);
-                        message.setTo("zhaodpx@163.com");
-                        mailSender.send(message);
-                        message.setTo("1069899238@qq.com");
-                        mailSender.send(message);
-                    }
+                    logger.info("=============================忘记打卡提醒任务=====结束==========================");
                 }
-                logger.info("=============================忘记打卡提醒任务=====结束==========================");
             }
         } catch (Exception e){
             e.printStackTrace();
